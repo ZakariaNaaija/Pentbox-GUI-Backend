@@ -35,16 +35,50 @@ def hash():
 		return jsonify({'hash':service.hasher(message,data['algorithm'])})
 	return ''
 
-@security.route('/crack',methods=['POST'])
-def crack():
+@security.route('/crack/bruteforce',methods=['POST'])
+def crackBruteForce():
 	data=request.get_json()
-	if (data==None or not 'message' in data or not 'algorithm' in data or not 'attack' in data):
+	if (data==None or not 'message' in data or not 'algorithm' in data):
 		return make_response('Bad request',400)
 	message=data['message']
 	if (len(message)>0):
-		password=service.cracker(data)
+		l=data['length'] if 'length' in data and data['length']<=5 else 5
+		password=service.bruteForce(message,data['algorithm'],l)
 		if (password==None):
-			return make_response('Password not found')
+			return make_response('Password not found',404)
 		else:
 			return jsonify({'password':password})
-	return ''
+	return make_response('Empty message',400)
+
+
+@security.route('/crack/dictionary',methods=['POST'])
+def crackDictionary():
+	data=request.get_json()
+	if (data==None or not 'message' in data or not 'algorithm' in data):
+		return make_response('Bad request',400)
+	message=data['message']
+	if (len(message)>0):
+		dic=data['dictionary'] if 'dictionary' in data else None
+		password=service.dictionaryAttack(message,data['algorithm'],dic)
+		if(password==None):
+			return make_response('Password not found',404)
+		else:
+			return jsonify({'password':password})
+	return make_response('Empty message',400)
+
+
+@security.route('/crack/hybrid',methods=['POST'])
+def crackHybrid():
+	data=request.get_json()
+	if (data==None or not 'message' in data or not 'algorithm' in data):
+		return make_response('Bad request',400)
+	message=data['message']
+	if(len(message)>0):
+		dic=data['dictionary'] if 'dictionary' in data else None
+		l=data['length'] if 'length' in data else 2
+		password=service.hybridAttack(message,data['algorithm'],l,dic)
+		if(password==None):
+			return make_response('Password not found',404)
+		else:
+			return jsonify({'password':password})
+	return make_response('Empty message',400)

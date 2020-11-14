@@ -14,52 +14,31 @@ def hasher(message,algorithm):
 	h.update(message.encode())
 	return h.hexdigest()
 
-def cracker(data):
-	message=data['message']
-	h=hashlib.new(data['algorithm'])
-	attack=data['attack']
-	if (attack=='brute'):
-		l=data['length']
-		if (l>5):
-			l=5
-		return bruteForce(message,h,l)
-	if (attack=='dictionary'):
-		d=None
-		if('dictionary' in data):
-			d=data['dictionary']
-		return dictionaryAttack(message,h,d)
-	if (attack=='hybrid'):
-		l=data['length']
-		d=None
-		if (l>2):
-			l=2
-		if('dictionary' in data):
-			d=data['dictionary']
-		return hybridAttack(message,h,l,d)
+
+def bruteForce(hashed,algorithm,maxLength):
+	chars="abcdefghijklmnopqrstuvwxyz"
+	candidatePass=None
+	hasher=hashlib.new(algorithm)
+	i =1
+	while(i<=maxLength):
+		#Effectuer le produit cartésien des caractères i fois 
+		for x in product(chars,repeat=i):
+		#Le résultat de product est une liste qu'on va parcourir
+		#contenant des listes de caractères donc on utilise join pour les concatiner dans une seule chaine
+			candidatePass=''.join(x)
+			h=hasher.copy()
+			h.update(candidatePass.encode())
+			if(hashed==h.hexdigest()):
+				del h
+				return candidatePass
+			del h
+			#h.update() ajoute la chaine passée en param aux chaines précédente donc on doit créer un nouveau h pour chaque essai
+		i=i+1
 	return None
 
 
-def bruteForce(hashed,hasher,maxLength):
-    chars="abcdefghijklmnopqrstuvwxyz"
-    candidatePass=None
-    i=1
-    while(i<=maxLength):
-		#Effectuer le produit cartésien des caractères i fois 
-        for x in product(chars,repeat=i):
-		#Le résultat de product est une liste qu'on va parcourir
-		#contenant des listes de caractères donc on utilise join pour les concatiner dans une seule chaine
-            candidatePass=''.join(x)
-            h=hasher.copy()
-            h.update(candidatePass.encode())
-            if(hashed==h.hexdigest()):
-                del h
-                return candidatePass
-            del h
-			#h.update() ajoute la chaine passée en param aux chaines précédente donc on doit créer un nouveau h pour chaque essai
-        i=i+1
-    return None
-
-def dictionaryAttack(hashed,hasher,dic):
+def dictionaryAttack(hashed,algorithm,dic):
+	hasher=hashlib.new(algorithm)
 	try:
 		f=open(dic,'r')
 	except:
@@ -76,7 +55,9 @@ def dictionaryAttack(hashed,hasher,dic):
 		del h
 	return None
 
-def hybridAttack(hashed,hasher,maxLength,dic):
+
+def hybridAttack(hashed,algorithm,maxLength,dic):
+	hasher=hashlib.new(algorithm)
 	nums='0123456789'
 	try:
 		f=open(dic,'r')
