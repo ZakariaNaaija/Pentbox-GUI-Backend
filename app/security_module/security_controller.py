@@ -1,4 +1,3 @@
-import sys
 from flask import Blueprint,request,jsonify,make_response
 import app.security_module.security_service as service
 
