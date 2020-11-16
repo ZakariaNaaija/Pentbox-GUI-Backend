@@ -37,6 +37,7 @@ def hash():
 @security.route('/crack/bruteforce',methods=['POST'])
 def crackBruteForce():
 	data=request.get_json()
+	print(data)
 	if (data==None or not 'message' in data or not 'algorithm' in data):
 		return make_response('Bad request',400)
 	message=data['message']
@@ -44,7 +45,7 @@ def crackBruteForce():
 		l=data['length'] if 'length' in data and data['length']<=5 else 5
 		password=service.bruteForce(message,data['algorithm'],l)
 		if (password==None):
-			return make_response('Password not found',404)
+			return jsonify({'password':'Password Not Found'})
 		else:
 			return jsonify({'password':password})
 	return make_response('Empty message',400)
@@ -60,7 +61,7 @@ def crackDictionary():
 		dic=data['dictionary'] if 'dictionary' in data else None
 		password=service.dictionaryAttack(message,data['algorithm'],dic)
 		if(password==None):
-			return make_response('Password not found',404)
+			return jsonify({'password':'Password Not Found'})
 		else:
 			return jsonify({'password':password})
 	return make_response('Empty message',400)
@@ -77,7 +78,7 @@ def crackHybrid():
 		l=data['length'] if 'length' in data else 2
 		password=service.hybridAttack(message,data['algorithm'],l,dic)
 		if(password==None):
-			return make_response('Password not found',404)
+			return jsonify({'password':'Password Not Found'})
 		else:
 			return jsonify({'password':password})
 	return make_response('Empty message',400)
