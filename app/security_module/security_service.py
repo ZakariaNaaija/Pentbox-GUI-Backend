@@ -1,17 +1,18 @@
 from itertools import product
 import hashlib
 import gnupg,base64
-gpg = gnupg.GPG()
-
 
 def sym_chiffrer(message,password):
-	cipher = gpg.encrypt(message, recipients=None, symmetric='AE256', passphrase=password, armor=True)
-	return (base64.b64encode(str(cipher)),password)
+	gpg = gnupg.GPG()
+	cipher = gpg.encrypt(message, recipients=None, symmetric='AES', passphrase=password)
+	return (base64.b64encode(str(cipher).encode()).decode(),password)
 
 
 def sym_dechiffrer(encrypted,algorithm,password):
-	deciphered = str(gpg.decrypt(base64.b64decode(encrypted), password))
-	return deciphered
+	gpg=gnupg.GPG()
+	message = base64.b64decode(encrypted).decode()
+	decrypted = str(gpg.decrypt(message, passphrase=password))
+	return decrypted if decrypted is not '' else "passphrase wrong" 
 
 
 def encode(message):
