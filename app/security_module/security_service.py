@@ -1,6 +1,17 @@
-import base64
-import hashlib
 from itertools import product
+import hashlib
+import gnupg,base64
+gpg = gnupg.GPG()
+
+
+def sym_chiffrer(message,password):
+	cipher = gpg.encrypt(message, recipients=None, symmetric='AE256', passphrase=password, armor=True)
+	return (base64.b64encode(str(cipher)),password)
+
+
+def sym_dechiffrer(encrypted,algorithm,password):
+	deciphered = str(gpg.decrypt(base64.b64decode(encrypted), password))
+	return deciphered
 
 
 def encode(message):
