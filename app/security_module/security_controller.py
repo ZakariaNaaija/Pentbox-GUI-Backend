@@ -11,8 +11,9 @@ def sym_chiffrer():
         return make_response('Bad request', 400)
     message = data['message']
     algorithm = data['algorithm']
+    password = data['password']
     if (len(message) > 0):
-        result = service.sym_chiffrer(message, algorithm)
+        result = service.sym_chiffrer(message, algorithm,password)
         return jsonify({'result': result[0], 'password': result[1]})
     return ''
 
@@ -20,13 +21,12 @@ def sym_chiffrer():
 @security.route('/symetrique/dechiffrer', methods=['POST'])
 def sym_dechiffrer():
     data = request.get_json()
-    if data is None or (not 'encrypted' in data and not 'algorithm' in data and not 'password' in data):
+    if data is None or (not 'encrypted' in data and not 'password' in data):
         return make_response('Bad request', 400)
     encrypted = data['encrypted']
     password = data['password']
-    algorithm = data['algorithm']
     if (len(encrypted) > 0):
-        result = service.sym_dechiffrer(encrypted, algorithm, password)
+        result = service.sym_dechiffrer(encrypted, password)
         return jsonify({'result': result})
     return ''
 
