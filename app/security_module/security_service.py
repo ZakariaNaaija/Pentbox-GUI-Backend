@@ -1,19 +1,51 @@
 from itertools import product
 import hashlib
 import gnupg,base64
+gpg = gnupg.GPG(gpgbinary="C:\Program Files (x86)\gnupg\\bin\gpg.exe")
+
 
 def sym_chiffrer(message,algorithm,password):
-	gpg = gnupg.GPG()
 	cipher = gpg.encrypt(message, recipients=None, symmetric=algorithm, passphrase=password)
 	return (base64.b64encode(str(cipher).encode()).decode(),password)
 
 
 def sym_dechiffrer(encrypted,password):
-	gpg=gnupg.GPG()
 	message = base64.b64decode(encrypted).decode()
 	decrypted = str(gpg.decrypt(message, passphrase=password))
+	return decrypted if decrypted != '' else "passphrase wrong"
 
-	return decrypted if decrypted is not '' else "passphrase wrong"
+def asym_chiffrer(message,algorithm,password):
+	"""input_data = gpg.gen_key_input()
+	key = gpg.gen_key(input_data)
+	#passphrase li hne howa eli t3adih lel decrypt mta3 message
+	ascii_armored_public_keys = gpg.export_keys(str(key),passphrase="zakaria")  # same as gpg.export_keys(keyids, False)
+	#ascii_armored_private_keys = gpg.export_keys(str(key), True,passphrase="zakaria")
+	print(ascii_armored_public_keys)
+	#print(ascii_armored_private_keys)
+	public_keys = gpg.list_keys()  # same as gpg.list_keys(False)
+	private_keys = gpg.list_keys(True)
+	print(public_keys)
+	print(private_keys)
+	cipher = gpg.encrypt(message, recipients="zakaria@DESKTOP-J6K0MMS", passphrase=password)
+	print(str(cipher))
+	return (base64.b64encode(str(cipher).encode()).decode(),password)
+	"""
+	return ("","")
+
+
+def asym_dechiffrer(encrypted,password):
+	"""	public_keys = gpg.list_keys()  # same as gpg.list_keys(False)
+	private_keys = gpg.list_keys(True)
+	print(public_keys)
+	print(private_keys)
+	message = base64.b64decode(encrypted).decode()
+	print(message)
+	decrypted = gpg.decrypt(message, passphrase=password)
+	print(decrypted.status)
+	print(str(decrypted),"hi")
+	return str(decrypted) if str(decrypted) != '' else "passphrase wrong"
+	"""
+	return ("","")
 
 
 def encode(message):

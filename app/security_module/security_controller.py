@@ -1,8 +1,34 @@
 from flask import Blueprint, request, jsonify, make_response
 import app.security_module.security_service as service
+from random import SystemRandom
 
 security = Blueprint('security', __name__)
 
+@security.route('/asymetrique/chiffrer', methods=['POST'])
+def asym_chiffrer():
+    data = request.get_json()
+    if data is None or (not 'message' in data and not 'algorithm' in data):
+        return make_response('Bad request', 400)
+    message = data['message']
+    algorithm = data['algorithm']
+    password = data['password']
+    if (len(message) > 0):
+        result = service.asym_chiffrer(message, algorithm,password)
+        return jsonify({'result': result[0], 'password': result[1]})
+    return ''
+
+
+@security.route('/asymetrique/dechiffrer', methods=['POST'])
+def asym_dechiffrer():
+    data = request.get_json()
+    if data is None or (not 'encrypted' in data and not 'password' in data):
+        return make_response('Bad request', 400)
+    encrypted = data['encrypted']
+    password = data['password']
+    if (len(encrypted) > 0):
+        result = service.asym_dechiffrer(encrypted, password)
+        return jsonify({'result': result})
+    return ''
 
 @security.route('/symetrique/chiffrer', methods=['POST'])
 def sym_chiffrer():
@@ -11,8 +37,13 @@ def sym_chiffrer():
         return make_response('Bad request', 400)
     message = data['message']
     algorithm = data['algorithm']
-    password = data['password']
-    if (len(message) > 0):
+    if not 'password' in data:
+        alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        password = "".join(SystemRandom().choice(alphabet) for _ in range(40))
+    else:
+        password = data['password']
+
+    if len(message) > 0:
         result = service.sym_chiffrer(message, algorithm,password)
         return jsonify({'result': result[0], 'password': result[1]})
     return ''
