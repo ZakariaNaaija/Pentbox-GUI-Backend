@@ -4,31 +4,71 @@ from random import SystemRandom
 
 security = Blueprint('security', __name__)
 
+
+@security.route('/asymetrique/verify', methods=['POST'])
+def asym_verify():
+    data = request.get_json()
+    if data is None or (not 'encrypted' in data and not 'signer_public_key' in data):
+        return make_response('Bad request', 400)
+    encrypted = data['encrypted']
+    signer_public_key = data['signer_public_key']
+    if (len(encrypted) > 0):
+        result = service.asym_verify(encrypted, signer_public_key)
+        return jsonify({'result': result})
+    return ''
+
+
+@security.route('/asymetrique/sign', methods=['POST'])
+def asym_sign():
+    data = request.get_json()
+    if data is None or (not 'message' in data and not 'local_private_key_data' in data and not 'passphrase' in data):
+        return make_response('Bad request', 400)
+    message = data['message']
+    passphrase = data['passphrase']
+    local_private_key_data = data['local_private_key_data']
+    if (len(message) > 0):
+        result = service.asym_sign(message, passphrase,local_private_key_data)
+        return jsonify({'result': result})
+    return ''
+
+
 @security.route('/asymetrique/chiffrer', methods=['POST'])
 def asym_chiffrer():
     data = request.get_json()
-    if data is None or (not 'message' in data and not 'algorithm' in data):
+    if data is None or (not 'message' in data and not 'recipient_public_key_data' in data):
         return make_response('Bad request', 400)
     message = data['message']
-    algorithm = data['algorithm']
-    password = data['password']
+    recipient_public_key_data = data['recipient_public_key_data']
     if (len(message) > 0):
-        result = service.asym_chiffrer(message, algorithm,password)
-        return jsonify({'result': result[0], 'password': result[1]})
+        result = service.asym_chiffrer(message, recipient_public_key_data)
+        return jsonify({'result': result})
     return ''
 
 
 @security.route('/asymetrique/dechiffrer', methods=['POST'])
 def asym_dechiffrer():
     data = request.get_json()
-    if data is None or (not 'encrypted' in data and not 'password' in data):
+    if data is None or (not 'encrypted' in data and not 'passphrase' in data and not 'local_private_key_data' in data):
         return make_response('Bad request', 400)
     encrypted = data['encrypted']
-    password = data['password']
-    if (len(encrypted) > 0):
-        result = service.asym_dechiffrer(encrypted, password)
+    passphrase = data['passphrase']
+    local_private_key_data = data['local_private_key_data']
+    if len(encrypted) > 0:
+        result = service.asym_dechiffrer(encrypted, passphrase,local_private_key_data)
         return jsonify({'result': result})
     return ''
+
+
+@security.route('/asymetrique/genkeys', methods=['GET'])
+def asym_gen_keys():
+    data = request.get_json()
+    if data is None or (not 'passphrase' in data and 'algorithm' in data):
+        return make_response('Bad request', 400)
+    passphrase = data['passphrase']
+    algorithm = data['algorithm']
+    result = service.gen_keys(request.remote_addr,passphrase,algorithm)
+    return jsonify({'secret': result[0],'public':result[1]})
+
 
 @security.route('/symetrique/chiffrer', methods=['POST'])
 def sym_chiffrer():
