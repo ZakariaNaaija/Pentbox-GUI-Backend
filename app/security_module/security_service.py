@@ -17,42 +17,53 @@ def sym_dechiffrer(encrypted, password):
 
 
 def gen_keys(ip, passphrase, algorithm):
-    input_data = gpg.gen_key_input(key_type=algorithm, key_length=1024, name_real=ip)
+    input_data = gpg.gen_key_input(key_type=algorithm, key_length=1024, name_real=ip,passphrase=passphrase)
     key = gpg.gen_key(input_data)
     ascii_armored_public_keys = gpg.export_keys(str(key), armor=True)  # same as gpg.export_keys(keyids, False)
     ascii_armored_private_keys = gpg.export_keys(str(key), True, armor=True, passphrase=passphrase)
     secret = encode(ascii_armored_private_keys)
     public = encode(ascii_armored_public_keys)
+    delete_keys(key.fingerprint,passphrase)
     return secret, public
 
 
+def delete_keys(fingerprint, passphrase):
+    gpg.delete_keys(fingerprint, True, passphrase=passphrase)
+    gpg.delete_keys(fingerprint, passphrase=passphrase)
+
+
 def asym_chiffrer(message, recipient_public_key_data):
-    import_result = gpg.import_keys(recipient_public_key_data)
-    cipher = gpg.encrypt(message, recipients=import_result.fingerprint)
-    print(str(cipher))
-    return encode(cipher)
+    import_result = gpg.import_keys(decode(recipient_public_key_data))
+    cipher = gpg.encrypt(message, recipients=key_id(import_result),always_trust=True)
+    gpg.delete_keys(key_id(import_result))
+    return encode(str(cipher))
 
 
 def asym_dechiffrer(encrypted, passphrase, local_private_key_data):
     encrypted = decode(encrypted)
-    import_result = gpg.import_keys(local_private_key_data)
+    import_result = gpg.import_keys(decode(local_private_key_data))
     decrypted = gpg.decrypt(encrypted, passphrase=passphrase)
+    delete_keys(key_id(import_result),passphrase=passphrase)
     return str(decrypted) if str(decrypted) != '' else "passphrase wrong"
 
 
 def asym_sign(message, passphrase, local_private_key_data):
-    import_result = gpg.import_keys(local_private_key_data)
-    signed_data = gpg.sign(message, keyid=import_result.key_id, passphrase=passphrase)
-    print(str(signed_data))
-    return encode(signed_data)
+    import_result = gpg.import_keys(decode(local_private_key_data))
+    signed_data = gpg.sign(message, keyid=key_id(import_result),
+                           passphrase=passphrase)
+    delete_keys(key_id(import_result),passphrase)
+    return encode(str(signed_data))
 
 
 def asym_verify(encrypted, signer_public_key):
     encrypted = decode(encrypted)
-    import_result = gpg.import_keys(signer_public_key)
+    import_result = gpg.import_keys(decode(signer_public_key))
     verified = gpg.verify(encrypted)
-    return verified if verified else "Signature could not be verified!"
+    gpg.delete_keys(key_id(import_result))
+    return verified.__dict__['valid'] if verified else "Signature could not be verified!"
 
+def key_id(import_result):
+    return import_result.__dict__['results'][0]['fingerprint'][-8:]
 
 def encode(message):
     return base64.b64encode(message.encode('ascii')).decode('ascii')
