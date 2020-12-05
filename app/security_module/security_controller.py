@@ -59,7 +59,7 @@ def asym_dechiffrer():
     return ''
 
 
-@security.route('/asymetrique/genkeys', methods=['GET'])
+@security.route('/asymetrique/genkeys', methods=['POST'])
 def asym_gen_keys():
     data = request.get_json()
     if data is None or (not 'passphrase' in data and 'algorithm' in data):
@@ -67,8 +67,15 @@ def asym_gen_keys():
     passphrase = data['passphrase']
     algorithm = data['algorithm']
     result = service.gen_keys(request.remote_addr,passphrase,algorithm)
-    return jsonify({'secret': result[0],'public':result[1]})
+    return jsonify({'secret': result[0],'public':result[1], 'fingerprint':result[2]})
 
+@security.route('/asymetrique/import',methods=['POST'])
+def import_key():
+    data = request.get_json()
+    if data is None or (not 'fingerprint' in data):
+        return make_response('Bad Request',400)
+    pubKey = service.import_key(data['fingerprint'])
+    return jsonify({'public':pubKey})
 
 @security.route('/symetrique/chiffrer', methods=['POST'])
 def sym_chiffrer():

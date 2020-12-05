@@ -1,18 +1,20 @@
 from itertools import product
 import hashlib
 import gnupg, base64
+import sys
 
-gpg = gnupg.GPG(gpgbinary="C:\Program Files (x86)\gnupg\\bin\gpg.exe")
+gpg = gnupg.GPG(gpgbinary="C:\Program Files (x86)\gnupg\\gpg.exe")
 
 
 def sym_chiffrer(message, algorithm, password):
     cipher = gpg.encrypt(message, recipients=None, symmetric=algorithm, passphrase=password)
-    return encode(str(cipher)), password
+    #return encode(str(cipher)), password
+    return str(cipher),password
 
 
 def sym_dechiffrer(encrypted, password):
-    message = decode(encrypted)
-    decrypted = str(gpg.decrypt(message, passphrase=password))
+    #message = decode(encrypted)
+    decrypted = str(gpg.decrypt(encrypted, passphrase=password))
     return decrypted if decrypted != '' else "passphrase wrong"
 
 
@@ -23,8 +25,13 @@ def gen_keys(ip, passphrase, algorithm):
     ascii_armored_private_keys = gpg.export_keys(str(key), True, armor=True, passphrase=passphrase)
     secret = encode(ascii_armored_private_keys)
     public = encode(ascii_armored_public_keys)
-    delete_keys(key.fingerprint,passphrase)
-    return secret, public
+    fingerprint=key.fingerprint
+    gpg.delete_keys(fingerprint,passphrase=passphrase,secret=True)
+    return ascii_armored_private_keys, ascii_armored_public_keys, fingerprint
+
+def import_key(fingerprint):
+    return gpg.export_keys(fingerprint, armor=True)
+
 
 
 def delete_keys(fingerprint, passphrase):
@@ -33,37 +40,56 @@ def delete_keys(fingerprint, passphrase):
 
 
 def asym_chiffrer(message, recipient_public_key_data):
-    import_result = gpg.import_keys(decode(recipient_public_key_data))
+    import_result = gpg.import_keys(recipient_public_key_data)
     cipher = gpg.encrypt(message, recipients=key_id(import_result),always_trust=True)
-    gpg.delete_keys(key_id(import_result))
-    return encode(str(cipher))
+    #print(cipher,file=sys.stdout)
+    #gpg.delete_keys(key_id(import_result))
+    #return encode(str(cipher))
+    return str(cipher)
 
 
 def asym_dechiffrer(encrypted, passphrase, local_private_key_data):
-    encrypted = decode(encrypted)
-    import_result = gpg.import_keys(decode(local_private_key_data))
+    #encrypted = decode(encrypted)
+    #import_result = gpg.import_keys(decode(local_private_key_data))
+    import_result = gpg.import_keys(local_private_key_data)
+    fingerprint = key_id(import_result)
     decrypted = gpg.decrypt(encrypted, passphrase=passphrase)
-    delete_keys(key_id(import_result),passphrase=passphrase)
+    gpg.delete_keys(key_id(import_result), secret=True, passphrase=passphrase)
     return str(decrypted) if str(decrypted) != '' else "passphrase wrong"
 
 
+def get_algorithm(fingerprint,private):
+    x=get_key_data(fingerprint,private)
+    if x is not None:
+        return x['algo']
+    return None
+
+
+def get_key_data(fingerprint,private):
+    for x in gpg.list_keys(private):
+        if x['fingerprint']==fingerprint:
+            return x
+    return None
+
 def asym_sign(message, passphrase, local_private_key_data):
-    import_result = gpg.import_keys(decode(local_private_key_data))
+    import_result = gpg.import_keys(local_private_key_data)
     signed_data = gpg.sign(message, keyid=key_id(import_result),
                            passphrase=passphrase)
-    delete_keys(key_id(import_result),passphrase)
-    return encode(str(signed_data))
+    #delete_keys(key_id(import_result),passphrase)
+    gpg.delete_keys(key_id(import_result), secret=True, passphrase=passphrase)
+    return str(signed_data)
 
 
 def asym_verify(encrypted, signer_public_key):
-    encrypted = decode(encrypted)
-    import_result = gpg.import_keys(decode(signer_public_key))
+    #encrypted = decode(encrypted)
+    import_result = gpg.import_keys(signer_public_key)
     verified = gpg.verify(encrypted)
-    gpg.delete_keys(key_id(import_result))
-    return verified.__dict__['valid'] if verified else "Signature could not be verified!"
+    #gpg.delete_keys(key_id(import_result))
+    return verified.__dict__['valid'] if verified else False#"Signature could not be verified!"
 
 def key_id(import_result):
-    return import_result.__dict__['results'][0]['fingerprint'][-8:]
+    #return import_result.__dict__['results'][0]['fingerprint'][-8:]
+    return import_result.results[0]['fingerprint']
 
 def encode(message):
     return base64.b64encode(message.encode('ascii')).decode('ascii')
