@@ -14,7 +14,7 @@ def asym_verify():
     signer_public_key = data['signer_public_key']
     if (len(encrypted) > 0):
         result = service.asym_verify(encrypted, signer_public_key)
-        return jsonify({'result': result})
+        return jsonify({'result': result[0],'algorithm':result[1]})
     return ''
 
 
@@ -55,7 +55,7 @@ def asym_dechiffrer():
     local_private_key_data = data['local_private_key_data']
     if len(encrypted) > 0:
         result = service.asym_dechiffrer(encrypted, passphrase,local_private_key_data)
-        return jsonify({'result': result})
+        return jsonify({'result': result[0],'algorithm':result[1]})
     return ''
 
 
@@ -69,13 +69,25 @@ def asym_gen_keys():
     result = service.gen_keys(request.remote_addr,passphrase,algorithm)
     return jsonify({'secret': result[0],'public':result[1], 'fingerprint':result[2]})
 
-@security.route('/asymetrique/import',methods=['POST'])
+@security.route('/asymetrique/import',methods=['GET','POST'])
 def import_key():
-    data = request.get_json()
-    if data is None or (not 'fingerprint' in data):
-        return make_response('Bad Request',400)
-    pubKey = service.import_key(data['fingerprint'])
-    return jsonify({'public':pubKey})
+    if request.method=='POST':
+        data = request.get_json()
+        if data is None or (not 'public' in data):
+            return make_response('Bad Request',400)
+        fingerprint = service.import_own_key(data['public'])
+        if fingerprint is not None:
+            return jsonify({'public':data['public'],'fingerprint':fingerprint})
+        return jsonify({'fingerprint':'Bad Public Key'})
+    else:
+        fingerprint = request.args.get('fingerprint')
+        if fingerprint is None:
+            return make_response('Bad Request',400)
+        public=service.import_key(fingerprint)
+        if public is not None and public!='':
+            return jsonify({'public':public})
+        return jsonify({'public':'Bad Fingerprint'})
+        
 
 @security.route('/symetrique/chiffrer', methods=['POST'])
 def sym_chiffrer():
@@ -105,7 +117,7 @@ def sym_dechiffrer():
     password = data['password']
     if (len(encrypted) > 0):
         result = service.sym_dechiffrer(encrypted, password)
-        return jsonify({'result': result})
+        return jsonify({'result': result[0],'algorithm':result[1]})
     return ''
 
 
