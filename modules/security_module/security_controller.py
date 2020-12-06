@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, make_response
-import app.security_module.security_service as service
+import modules.security_module.security_service as service
 from random import SystemRandom
 
 security = Blueprint('security', __name__)

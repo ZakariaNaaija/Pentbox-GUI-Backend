@@ -1,6 +1,6 @@
 import sys
 from flask import Flask
-from app.security_module.security_controller import security
+from modules.security_module.security_controller import security
 from flask_cors import CORS
 import os
 

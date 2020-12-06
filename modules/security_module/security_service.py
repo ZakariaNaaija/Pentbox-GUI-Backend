@@ -168,7 +168,7 @@ def dictionaryAttack(hashed, algorithm, dic):
     try:
         f = open(dic, 'r')
     except:
-        f = open('app/security_module/dictionaries/words.txt', 'r')
+        f = open('modules/security_module/dictionaries/words.txt', 'r')
     f1 = f.readlines()
     for x in f1:
         # On enlève l'anti slash n
@@ -188,7 +188,7 @@ def hybridAttack(hashed, algorithm, maxLength, dic):
     try:
         f = open(dic, 'r')
     except:
-        f = open('app/security_module/dictionaries/words.txt', 'r')
+        f = open('modules/security_module/dictionaries/words.txt', 'r')
     f1 = f.readlines()
     for x in f1:
         x = x[:-1]
