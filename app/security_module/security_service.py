@@ -4,7 +4,8 @@ import gnupg, base64
 import sys
 import os
 import io
-gpg = gnupg.GPG(gpgbinary="C:\Program Files (x86)\gnupg\\bin\\gpg.exe")
+#gpgbinary="C:\Program Files (x86)\gnupg\\bin\\gpg.exe"
+gpg = gnupg.GPG()
 fileName = ''
 
 
