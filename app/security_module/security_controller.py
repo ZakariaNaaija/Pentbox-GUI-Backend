@@ -13,7 +13,7 @@ def asym_verify():
     encrypted = data['encrypted']
     signer_public_key = data['signer_public_key']
     if (len(encrypted) > 0):
-        result = service.asym_verify(encrypted, signer_public_key)
+        result = service.asym_verify(encrypted, signer_public_key,request.remote_addr)
         return jsonify({'result': result[0],'algorithm':result[1]})
     return ''
 
@@ -54,7 +54,7 @@ def asym_dechiffrer():
     passphrase = data['passphrase']
     local_private_key_data = data['local_private_key_data']
     if len(encrypted) > 0:
-        result = service.asym_dechiffrer(encrypted, passphrase,local_private_key_data)
+        result = service.asym_dechiffrer(encrypted, passphrase,local_private_key_data,request.remote_addr)
         return jsonify({'result': result[0],'algorithm':result[1]})
     return ''
 
@@ -103,7 +103,7 @@ def sym_chiffrer():
         password = data['password']
 
     if len(message) > 0:
-        result = service.sym_chiffrer(message, algorithm,password)
+        result = service.sym_chiffrer(message, algorithm, password)
         return jsonify({'result': result[0], 'password': result[1]})
     return ''
 
@@ -116,7 +116,7 @@ def sym_dechiffrer():
     encrypted = data['encrypted']
     password = data['password']
     if (len(encrypted) > 0):
-        result = service.sym_dechiffrer(encrypted, password)
+        result = service.sym_dechiffrer(encrypted, password, request.remote_addr)
         return jsonify({'result': result[0],'algorithm':result[1]})
     return ''
 

@@ -2,45 +2,51 @@ from itertools import product
 import hashlib
 import gnupg, base64
 import sys
+import os
+import io
+gpg = gnupg.GPG(gpgbinary="C:\Program Files (x86)\gnupg\\bin\\gpg.exe")
+fileName = ''
 
-gpg = gnupg.GPG(gpgbinary="C:\Program Files (x86)\gnupg\\gpg.exe")
-fileName= 'test.txt'
 
 def sym_chiffrer(message, algorithm, password):
     cipher = gpg.encrypt(message, recipients=None, symmetric=algorithm, passphrase=password)
-    #return encode(str(cipher)), password
-    return str(cipher),password
+    # return encode(str(cipher)), password
+    return str(cipher), password
 
 
-def sym_dechiffrer(encrypted, password):
-    #message = decode(encrypted)
+def sym_dechiffrer(encrypted, password, ip):
+    # message = decode(encrypted)
+    fileName = "output-"+ip+".txt"
     gpg.verbose = True
-    sys.stdout= open(fileName,"w+")
-    decrypted = str(gpg.decrypt(encrypted, passphrase=password))
-    sys.stdout.flush()
-    sys.stdout.close()
-    algorithm = get_algorithm(fileName)
-    gpg.verbose = False
-    return (decrypted,algorithm) if decrypted != '' else "passphrase wrong"
+    with io.open(fileName, "w+", encoding="utf-8") as sys.stdout:
+        decrypted = str(gpg.decrypt(encrypted, passphrase=password))
+        sys.stdout.flush()
+        sys.stdout.close()
+        algorithm = ""
+        gpg.verbose = False
+    if decrypted != '':
+        algorithm = get_algorithm(fileName)
+    return (decrypted, algorithm) if decrypted != '' else ('passphrase wrong','')
 
 
 def gen_keys(ip, passphrase, algorithm):
-    input_data = gpg.gen_key_input(key_type=algorithm, key_length=1024, name_real=ip,passphrase=passphrase)
+    input_data = gpg.gen_key_input(key_type=algorithm, key_length=1024, name_real=ip, passphrase=passphrase)
     key = gpg.gen_key(input_data)
     ascii_armored_public_keys = gpg.export_keys(str(key), armor=True)  # same as gpg.export_keys(keyids, False)
     ascii_armored_private_keys = gpg.export_keys(str(key), True, armor=True, passphrase=passphrase)
     secret = encode(ascii_armored_private_keys)
     public = encode(ascii_armored_public_keys)
-    fingerprint=key.fingerprint
-    gpg.delete_keys(fingerprint,passphrase=passphrase,secret=True)
+    fingerprint = key.fingerprint
+    gpg.delete_keys(fingerprint, passphrase=passphrase, secret=True)
     return ascii_armored_private_keys, ascii_armored_public_keys, fingerprint
+
 
 def import_key(fingerprint):
     return gpg.export_keys(fingerprint, armor=True)
 
+
 def import_own_key(public):
     return gpg.import_keys(public).results[0]['fingerprint']
-
 
 
 def delete_keys(fingerprint, passphrase):
@@ -50,67 +56,75 @@ def delete_keys(fingerprint, passphrase):
 
 def asym_chiffrer(message, recipient_public_key_data):
     import_result = gpg.import_keys(recipient_public_key_data)
-    cipher = gpg.encrypt(message, recipients=key_id(import_result),always_trust=True)
-    #print(cipher,file=sys.stdout)
-    #gpg.delete_keys(key_id(import_result))
-    #return encode(str(cipher))
+    cipher = gpg.encrypt(message, recipients=key_id(import_result), always_trust=True)
+    # print(cipher,file=sys.stdout)
+    # gpg.delete_keys(key_id(import_result))
+    # return encode(str(cipher))
     return str(cipher)
 
 
-def asym_dechiffrer(encrypted, passphrase, local_private_key_data):
-    #encrypted = decode(encrypted)
-    #import_result = gpg.import_keys(decode(local_private_key_data))
+def asym_dechiffrer(encrypted, passphrase, local_private_key_data,ip):
+    # encrypted = decode(encrypted)
+    # import_result = gpg.import_keys(decode(local_private_key_data))
     import_result = gpg.import_keys(local_private_key_data)
     fingerprint = key_id(import_result)
+    fileName = "output-"+ip+".txt"
     gpg.verbose = True
-    sys.stdout = open(fileName,'w+')
-    decrypted = gpg.decrypt(encrypted, passphrase=passphrase)
-    sys.stdout.flush()
-    sys.stdout.close()
-    algorithm = get_algorithm(fileName,False)
+    with io.open(fileName, "w+", encoding="utf-8") as sys.stdout:
+        decrypted = gpg.decrypt(encrypted, passphrase=passphrase)
+        sys.stdout.flush()
+        sys.stdout.close()
     gpg.verbose = False
+    algorithm = get_algorithm(fileName, False)
     gpg.delete_keys(key_id(import_result), secret=True, passphrase=passphrase)
-    return (str(decrypted),algorithm) if str(decrypted) != '' else "passphrase wrong"
+    return (str(decrypted), algorithm) if str(decrypted) != '' else ("passphrase wrong","")
 
 
-
-def get_algorithm(fileName,sym=True):
+def get_algorithm(fileName, sym=True):
     line = None
-    for x in open(fileName,"r"):
-        if x.find('gpg:')>-1:
-            line = x
-            break
-    if line is not None:
-        if sym==True:
-            return (line[4:]).capitalize()
-        return (line[4:line.find(',')]).capitalize()
-    return None
+    algo = None
+    with open(fileName, "r", encoding='utf-8') as file:
+        for x in file:
+            if x.find('gpg:') > -1:
+                line = x
+                break
+        if line is not None:
+            if sym == True:
+                algo = (line[4:])
+            else:
+                algo= (line[4:line.find(',')]).capitalize()
+    #os.remove(fileName)
+    return algo
+
 
 def asym_sign(message, passphrase, local_private_key_data):
     import_result = gpg.import_keys(local_private_key_data)
     signed_data = gpg.sign(message, keyid=key_id(import_result),
                            passphrase=passphrase)
-    #delete_keys(key_id(import_result),passphrase)
+    # delete_keys(key_id(import_result),passphrase)
     gpg.delete_keys(key_id(import_result), secret=True, passphrase=passphrase)
     return str(signed_data)
 
 
-def asym_verify(encrypted, signer_public_key):
-    #encrypted = decode(encrypted)
+def asym_verify(encrypted, signer_public_key,ip):
+    # encrypted = decode(encrypted)
     import_result = gpg.import_keys(signer_public_key)
+    fileName = "output-"+ip+".txt"
     gpg.verbose = True
-    sys.stdout = open(fileName,'w+')
-    verified = gpg.verify(encrypted)
-    sys.stdout.flush()
-    sys.stdout.close()
-    algorithm = get_algorithm(fileName,False)
+    with io.open(fileName, "w+", encoding="utf-8") as sys.stdout:
+        verified = gpg.verify(encrypted)
+        sys.stdout.flush()
+        sys.stdout.close()
     gpg.verbose = False
-    #gpg.delete_keys(key_id(import_result))
-    return (verified.__dict__['valid'],algorithm) if verified else False#"Signature could not be verified!"
+    algorithm = get_algorithm(fileName, False)
+    # gpg.delete_keys(key_id(import_result))
+    return (verified.__dict__['valid'], algorithm) if verified else False  # "Signature could not be verified!"
+
 
 def key_id(import_result):
-    #return import_result.__dict__['results'][0]['fingerprint'][-8:]
+    # return import_result.__dict__['results'][0]['fingerprint'][-8:]
     return import_result.results[0]['fingerprint']
+
 
 def encode(message):
     return base64.b64encode(message.encode('ascii')).decode('ascii')
