@@ -81,20 +81,32 @@ def asym_dechiffrer(encrypted, passphrase, local_private_key_data,ip):
     return (str(decrypted), algorithm) if str(decrypted) != '' else ("passphrase wrong","")
 
 
-def get_algorithm(fileName, sym=True):
+def get_algorithm(fileName, sym=True, verify=False):
     line = None
     algo = None
+    verify_line = ""
+    i = 0
     with open(fileName, "r", encoding='utf-8') as file:
         for x in file:
             if x.find('gpg:') > -1:
-                line = x
-                break
+                if not verify:
+                    line = x
+                    break
+                else:
+                    i=i+1
+                    verify_line += x[4:x.find(',')]+" "
+                    if i==2: break
+        if verify:
+            line = verify_line
         if line is not None:
             if sym == True:
                 algo = (line[4:])
             else:
-                algo= (line[4:line.find(',')]).capitalize()
-    #os.remove(fileName)
+                if not verify:
+                    algo = (line[4:line.find(',')])
+                else:
+                    algo = verify_line
+    os.remove(fileName)
     return algo
 
 
@@ -117,7 +129,7 @@ def asym_verify(encrypted, signer_public_key,ip):
         sys.stdout.flush()
         sys.stdout.close()
     gpg.verbose = False
-    algorithm = get_algorithm(fileName, False)
+    algorithm = get_algorithm(fileName, sym=False,verify=True)
     # gpg.delete_keys(key_id(import_result))
     return (verified.__dict__['valid'], algorithm) if verified else False  # "Signature could not be verified!"
 
