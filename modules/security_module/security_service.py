@@ -4,7 +4,8 @@ import gnupg, base64
 import sys
 import os
 import io
-#gpgbinary="C:\Program Files (x86)\gnupg\\bin\\gpg.exe"
+
+# gpgbinary="C:\Program Files (x86)\gnupg\\bin\\gpg.exe"
 gpg = gnupg.GPG()
 fileName = ''
 
@@ -17,7 +18,7 @@ def sym_chiffrer(message, algorithm, password):
 
 def sym_dechiffrer(encrypted, password, ip):
     # message = decode(encrypted)
-    fileName = "output-"+ip+".txt"
+    fileName = "output-" + ip + ".txt"
     gpg.verbose = True
     with io.open(fileName, "w+", encoding="utf-8") as sys.stdout:
         decrypted = str(gpg.decrypt(encrypted, passphrase=password))
@@ -27,7 +28,7 @@ def sym_dechiffrer(encrypted, password, ip):
         gpg.verbose = False
     if decrypted != '':
         algorithm = get_algorithm(fileName)
-    return (decrypted, algorithm) if decrypted != '' else ('passphrase wrong','')
+    return (decrypted, algorithm) if decrypted != '' else ('passphrase wrong', '')
 
 
 def gen_keys(ip, passphrase, algorithm):
@@ -64,12 +65,12 @@ def asym_chiffrer(message, recipient_public_key_data):
     return str(cipher)
 
 
-def asym_dechiffrer(encrypted, passphrase, local_private_key_data,ip):
+def asym_dechiffrer(encrypted, passphrase, local_private_key_data, ip):
     # encrypted = decode(encrypted)
     # import_result = gpg.import_keys(decode(local_private_key_data))
     import_result = gpg.import_keys(local_private_key_data)
     fingerprint = key_id(import_result)
-    fileName = "output-"+ip+".txt"
+    fileName = "output-" + ip + ".txt"
     gpg.verbose = True
     with io.open(fileName, "w+", encoding="utf-8") as sys.stdout:
         decrypted = gpg.decrypt(encrypted, passphrase=passphrase)
@@ -78,7 +79,7 @@ def asym_dechiffrer(encrypted, passphrase, local_private_key_data,ip):
     gpg.verbose = False
     algorithm = get_algorithm(fileName, False)
     gpg.delete_keys(key_id(import_result), secret=True, passphrase=passphrase)
-    return (str(decrypted), algorithm) if str(decrypted) != '' else ("passphrase wrong","")
+    return (str(decrypted), algorithm) if str(decrypted) != '' else ("passphrase wrong", "")
 
 
 def get_algorithm(fileName, sym=True, verify=False):
@@ -93,9 +94,9 @@ def get_algorithm(fileName, sym=True, verify=False):
                     line = x
                     break
                 else:
-                    i=i+1
-                    verify_line += x[4:x.find(',')]+" "
-                    if i==2: break
+                    i = i + 1
+                    verify_line += x[4:x.find(',')] + " "
+                    if i == 2: break
         if verify:
             line = verify_line
         if line is not None:
@@ -119,17 +120,17 @@ def asym_sign(message, passphrase, local_private_key_data):
     return str(signed_data)
 
 
-def asym_verify(encrypted, signer_public_key,ip):
+def asym_verify(encrypted, signer_public_key, ip):
     # encrypted = decode(encrypted)
     import_result = gpg.import_keys(signer_public_key)
-    fileName = "output-"+ip+".txt"
+    fileName = "output-" + ip + ".txt"
     gpg.verbose = True
     with io.open(fileName, "w+", encoding="utf-8") as sys.stdout:
         verified = gpg.verify(encrypted)
         sys.stdout.flush()
         sys.stdout.close()
     gpg.verbose = False
-    algorithm = get_algorithm(fileName, sym=False,verify=True)
+    algorithm = get_algorithm(fileName, sym=False, verify=True)
     # gpg.delete_keys(key_id(import_result))
     return (verified.__dict__['valid'], algorithm) if verified else False  # "Signature could not be verified!"
 
@@ -144,7 +145,12 @@ def encode(message):
 
 
 def decode(message):
-    return base64.b64decode(message.encode('ascii')).decode('ascii')
+    decoded = None
+    try:
+        decoded = base64.b64decode(message.encode('ascii')).decode('ascii')
+    except:
+        return decoded
+    return decoded
 
 
 def hasher(message, algorithm):
